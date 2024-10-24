@@ -1,7 +1,6 @@
-extends Node2D
+extends Node
 
-# TODO: Update to match your plugin's name
-var _plugin_name = "GodotAndroidPluginTemplate"
+var _plugin_name = "webkit-godot-android"
 var _android_plugin
 
 func _ready():
@@ -12,5 +11,6 @@ func _ready():
 
 func _on_Button_pressed():
 	if _android_plugin:
-		# TODO: Update to match your plugin's API
-		_android_plugin.helloWorld()
+		_android_plugin.openUrl("https://decentraland.org/auth/", "Your security code is 64")
+		await get_tree().create_timer(5.0).timeout
+		_android_plugin.closeWebView()
