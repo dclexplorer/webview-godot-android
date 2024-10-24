@@ -38,8 +38,7 @@ android {
 }
 
 dependencies {
-    implementation("org.godotengine:godot:4.3.0.stable")
-    // TODO: Additional dependencies should be added to export_plugin.gd as well.
+    implementation("org.godotengine:godot:4.2.1.stable")
 }
 
 // BUILD TASKS DEFINITION
