@@ -37,6 +37,7 @@ android {
 
 dependencies {
     implementation("org.godotengine:godot:4.2.1.stable")
+    implementation("androidx.browser:browser:1.5.0")
 }
 
 // BUILD TASKS DEFINITION

@@ -31,10 +31,7 @@ class AndroidExportPlugin extends EditorExportPlugin:
 			return PackedStringArray([_plugin_name + "/bin/release/" + _plugin_name + "-release.aar"])
 
 	func _get_android_dependencies(platform, debug):
-		if debug:
-			return PackedStringArray([])
-		else:
-			return PackedStringArray([])
+		return PackedStringArray(["androidx.browser:browser:1.5.0"])
 
 	func _get_name():
 		return _plugin_name

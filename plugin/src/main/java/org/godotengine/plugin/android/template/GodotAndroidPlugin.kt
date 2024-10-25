@@ -1,13 +1,20 @@
 package org.decentraland.godotexplorer
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.util.Log
+import android.webkit.WebResourceRequest
 import android.widget.FrameLayout
 import android.widget.TextView
-import android.widget.Toast
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
+import androidx.browser.customtabs.CustomTabsIntent
+import androidx.browser.customtabs.CustomTabsService
 import org.godotengine.godot.Godot
 import org.godotengine.godot.plugin.GodotPlugin
 import org.godotengine.godot.plugin.UsedByGodot
@@ -18,10 +25,84 @@ class GodotAndroidPlugin(godot: Godot) : GodotPlugin(godot) {
     private var isWebViewOpen: Boolean = false
     private var overlayLayout: FrameLayout? = null
 
+    private val customPackageNames = arrayOf(
+        "com.android.chrome",        // Google Chrome
+        "org.mozilla.firefox",       // Mozilla Firefox
+        "com.microsoft.emmx",        // Microsoft Edge
+        "com.brave.browser",         // Brave Browser
+        "com.opera.browser",         // Opera Browser
+        "com.opera.mini.native",     // Opera Mini
+        "com.sec.android.app.sbrowser" // Samsung Internet
+    )
+
     override fun getPluginName() = BuildConfig.GODOT_PLUGIN_NAME
 
     @UsedByGodot
-    fun openUrl(url: String, overlayText: String?) {
+    fun showMessage(message: String) {
+        runOnUiThread {
+            Toast.makeText(activity, message, Toast.LENGTH_LONG).show()
+            Log.v(pluginName, message)
+        }
+    }
+
+    @UsedByGodot
+    fun openCustomTabUrl(url: String) {
+        runOnUiThread {
+            activity?.let {
+                var done = false
+                for (customPackageName in customPackageNames) {
+                    if (openCustomTab(it, url, customPackageName)) {
+                        Log.d(pluginName, "openCustomTab: $customPackageName")
+                        //openCustomTab(it, url, customPackageName)
+                        done = true
+                        break
+                    }
+                }
+
+                if (!done) {
+                    openUrl(it, url)
+                    Log.d(pluginName, "No Custom Tabs available, using fallback to open URL")
+                }
+            } ?: Log.e(pluginName, "Activity is null, cannot open URL.")
+        }
+    }
+
+    private fun openCustomTab(activity: Activity, url: String, packageName: String): Boolean {
+        try {
+            val builder = CustomTabsIntent.Builder()
+            val customTabsIntent = builder.build()
+            customTabsIntent.intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
+            customTabsIntent.intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            customTabsIntent.intent.setPackage(packageName)
+            customTabsIntent.launchUrl(activity, Uri.parse(url))
+            return true
+        } catch (e: Exception) {
+            Log.e(pluginName, "Error opening Custom Tab for package $packageName: $e")
+            return false
+        }
+    }
+
+    private fun openUrl(activity: Activity, url: String) {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        try {
+            activity.startActivity(intent)
+        } catch (e: Exception) {
+            Log.e(pluginName, "Error opening default browser: $e")
+        }
+    }
+
+    private fun handleDeepLink(activity: Activity, url: String) {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        try {
+            activity.startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            Log.e(pluginName, "No application can handle deep link $url: $e")
+            showMessage("No application found to handle this link")
+        }
+    }
+
+    @UsedByGodot
+    fun openWebView(url: String, overlayText: String?) {
         runOnUiThread {
             activity?.let {
                 if (!isWebViewOpen) {
@@ -31,10 +112,52 @@ class GodotAndroidPlugin(godot: Godot) : GodotPlugin(godot) {
                     // Create a FrameLayout to hold the WebView and TextView
                     overlayLayout = FrameLayout(it)
 
-                    // Create a WebView and load the URL
+                    // Create a WebView and configure it to behave as much like Chrome as possible
                     webView = WebView(it).apply {
-                        webViewClient = WebViewClient()
                         settings.javaScriptEnabled = true
+                        settings.domStorageEnabled = true
+                        settings.javaScriptCanOpenWindowsAutomatically = true
+                        settings.mediaPlaybackRequiresUserGesture = false
+                        settings.loadsImagesAutomatically = true
+                        settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                        settings.allowFileAccess = true
+                        settings.setSupportZoom(true)
+                        settings.builtInZoomControls = true
+                        settings.displayZoomControls = false
+                        settings.useWideViewPort = true
+                        settings.loadWithOverviewMode = true
+                        settings.databaseEnabled = true
+
+                        // Allow third-party cookies (to make it similar to Chrome)
+                        android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+
+                        // Set a custom WebViewClient to handle deep links, redirects, SSL, etc.
+                        webViewClient = object : WebViewClient() {
+                            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                                val requestUrl = request?.url.toString()
+                                if (requestUrl.startsWith("wc:")) {
+                                    handleDeepLink(it, requestUrl)
+                                    return true
+                                }
+                                return false
+                            }
+
+                            override fun onReceivedSslError(view: WebView?, handler: android.webkit.SslErrorHandler?, error: android.net.http.SslError?) {
+                                // Handle SSL errors, ideally show some kind of dialog to the user
+                                handler?.proceed() // For demo purposes, ignore SSL errors. Not recommended in production.
+                            }
+
+                            override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                                Log.d(pluginName, "Page loading started: $url")
+                                super.onPageStarted(view, url, favicon)
+                            }
+
+                            override fun onPageFinished(view: WebView?, url: String?) {
+                                Log.d(pluginName, "Page loading finished: $url")
+                                super.onPageFinished(view, url)
+                            }
+                        }
+
                         loadUrl(url)
                     }
 
@@ -46,25 +169,22 @@ class GodotAndroidPlugin(godot: Godot) : GodotPlugin(godot) {
 
                     // If overlayText is not null or empty, create a TextView and add it
                     if (!overlayText.isNullOrEmpty()) {
-                        // Create a TextView and set the text
                         val textView = TextView(it).apply {
                             text = overlayText
-                            textSize = 18f // Adjust text size as needed
-                            setPadding(16, 16, 16, 16) // Add padding for better visibility
-                            setBackgroundColor(0x80000000.toInt()) // Semi-transparent black background
-                            setTextColor(0xFFFFFFFF.toInt()) // White text color
+                            textSize = 18f
+                            setPadding(16, 16, 16, 16)
+                            setBackgroundColor(0x80000000.toInt()) // Semi-transparent background
+                            setTextColor(0xFFFFFFFF.toInt()) // White text
                         }
 
-                        // Set layout parameters for TextView to be centered horizontally and positioned 20% above the bottom
                         val textViewLayoutParams = FrameLayout.LayoutParams(
                             FrameLayout.LayoutParams.WRAP_CONTENT,
                             FrameLayout.LayoutParams.WRAP_CONTENT
                         ).apply {
                             gravity = android.view.Gravity.CENTER_HORIZONTAL or android.view.Gravity.BOTTOM
-                            bottomMargin = (it.resources.displayMetrics.heightPixels * 0.2).toInt() // 20% above the bottom
+                            bottomMargin = (it.resources.displayMetrics.heightPixels * 0.2).toInt() // Position 20% above bottom
                         }
 
-                        // Add the TextView to the FrameLayout
                         overlayLayout?.addView(textView, textViewLayoutParams)
                     }
 
@@ -79,9 +199,10 @@ class GodotAndroidPlugin(godot: Godot) : GodotPlugin(godot) {
 
                     isWebViewOpen = true
                 }
-            } ?: Log.e(pluginName, "Activity is null, cannot open URL.")
+            } ?: Log.e(pluginName, "Activity is null, cannot open WebView.")
         }
     }
+
 
     @UsedByGodot
     fun closeWebView() {
@@ -101,4 +222,24 @@ class GodotAndroidPlugin(godot: Godot) : GodotPlugin(godot) {
             } ?: Log.e(pluginName, "Activity is null, cannot close WebView.")
         }
     }
+
+    private fun isPackageAvailable(activity: Activity, packageName: String): Boolean {
+        // First, check if the package supports Custom Tabs.
+        val customTabsPackages = activity.packageManager.queryIntentServices(
+            Intent(CustomTabsService.ACTION_CUSTOM_TABS_CONNECTION),
+            PackageManager.MATCH_ALL
+        )
+        if (customTabsPackages.any { resolveInfo -> resolveInfo.serviceInfo.packageName.equals(packageName, ignoreCase = true) }) {
+            return true
+        }
+
+        // If the package does not support Custom Tabs, fallback to check if it is installed as a browser.
+        return try {
+            activity.packageManager.getPackageInfo(packageName, PackageManager.GET_ACTIVITIES)
+            true
+        } catch (e: PackageManager.NameNotFoundException) {
+            false
+        }
+    }
+
 }
