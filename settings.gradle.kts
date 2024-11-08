@@ -15,5 +15,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "webkit-godot-android"
+rootProject.name = "webview-godot-android"
 include(":plugin")

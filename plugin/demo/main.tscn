@@ -29,22 +29,22 @@ theme_override_font_sizes/font_size = 48
 text = "Open
 Custom Tab"
 
-[node name="ButtonWebKit" type="Button" parent="VBoxContainer"]
+[node name="ButtonWebView" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 theme_override_font_sizes/font_size = 48
 text = "Open
-WebKit"
+WebView"
 
-[node name="ButtonWebKitAndDestroy" type="Button" parent="VBoxContainer"]
+[node name="ButtonWebViewAndDestroy" type="Button" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 theme_override_font_sizes/font_size = 48
-text = "Open WebKit and
+text = "Open WebView and
 5 secs destroy"
 
 [connection signal="pressed" from="VBoxContainer/ButtonCustomTab" to="." method="_on_button_custom_tab_pressed"]
-[connection signal="pressed" from="VBoxContainer/ButtonWebKit" to="." method="_on_button_web_kit_pressed"]
-[connection signal="pressed" from="VBoxContainer/ButtonWebKitAndDestroy" to="." method="_on_button_web_kit_and_destroy_pressed"]
+[connection signal="pressed" from="VBoxContainer/ButtonWebView" to="." method="_on_button_web_kit_pressed"]
+[connection signal="pressed" from="VBoxContainer/ButtonWebViewAndDestroy" to="." method="_on_button_web_kit_and_destroy_pressed"]
