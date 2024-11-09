@@ -3,12 +3,15 @@ name: Android Build and Upload Artifacts
 on:
   push:
     branches:
-      - main  # Run on pushes to the main branch
+      - main
   pull_request:
     branches:
-      - main  # Run on PRs to the main branch
+      - main
   release:
-    types: [published]  # Run when a release is published
+    types: [published]
+
+permissions:
+  contents: write  # Grant write permission to the contents scope
 
 jobs:
   build:
