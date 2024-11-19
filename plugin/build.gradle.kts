@@ -36,7 +36,7 @@ android {
 }
 
 dependencies {
-    implementation("org.godotengine:godot:4.2.1.stable")
+    implementation("org.godotengine:godot:4.3.0.stable")
     implementation("androidx.browser:browser:1.5.0")
 }
 
