@@ -139,6 +139,11 @@ class GodotAndroidPlugin(godot: Godot) : GodotPlugin(godot) {
                                     handleDeepLink(it, requestUrl)
                                     return true
                                 }
+
+                                if (requestUrl.startsWith("decentraland:")) {
+                                    closeWebView()
+                                    return true
+                                }
                                 return false
                             }
 
