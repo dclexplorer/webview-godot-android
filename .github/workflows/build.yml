@@ -24,7 +24,7 @@ jobs:
 
     # Step 2: Set up JDK (Java Development Kit)
     - name: Set up JDK 17
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
@@ -40,7 +40,7 @@ jobs:
     # Step 5a: Upload ZIP as Local Artifact for Push/PR
     - name: Upload ZIP as Local Artifact
       if: github.event_name != 'release'  # Only upload to local artifacts on push or PR
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: webview-godot-android-zip
         path: webview-godot-android.zip

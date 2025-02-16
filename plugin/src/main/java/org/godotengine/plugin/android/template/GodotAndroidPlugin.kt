@@ -148,8 +148,8 @@ class GodotAndroidPlugin(godot: Godot) : GodotPlugin(godot) {
                             }
 
                             override fun onReceivedSslError(view: WebView?, handler: android.webkit.SslErrorHandler?, error: android.net.http.SslError?) {
-                                // Handle SSL errors, ideally show some kind of dialog to the user
-                                handler?.proceed() // For demo purposes, ignore SSL errors. Not recommended in production.
+                                Log.e(pluginName, "Ssl error")
+                                handler?.cancel()
                             }
 
                             override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
